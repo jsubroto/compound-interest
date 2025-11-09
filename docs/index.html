@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power of Compound Interest</title>
+    <meta
+      name="description"
+      content="Interactive compound-interest visualizer — see how contributions and time drive growth."
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: { extend: { colors: { accent: "#0a84ff" } } },
+      };
+    </script>
+  </head>
+
+  <body class="bg-white text-gray-900 font-sans p-6">
+    <div class="max-w-5xl mx-auto space-y-6">
+      <h1 class="text-2xl font-semibold">Power of Compound Interest</h1>
+
+      <div class="grid md:grid-cols-[340px_1fr] gap-4">
+        <!-- Controls -->
+        <div class="border rounded-xl p-4 space-y-4">
+          <div class="flex flex-wrap gap-2">
+            <button
+              class="px-3 py-1 rounded-full border text-sm hover:border-gray-400"
+              data-preset="p=1000,pm=100,r=7,y=30,n=12"
+            >
+              Classic: $1k + $100/mo · 7% · 30y
+            </button>
+            <button
+              class="px-3 py-1 rounded-full border text-sm hover:border-gray-400"
+              data-preset="p=0,pm=200,r=7,y=40,n=12"
+            >
+              $200/mo · 7% · 40y
+            </button>
+            <button
+              class="px-3 py-1 rounded-full border text-sm hover:border-gray-400"
+              data-preset="p=20000,pm=0,r=7,y=30,n=12"
+            >
+              $20k lump · 7% · 30y
+            </button>
+            <button
+              class="px-3 py-1 rounded-full border text-sm hover:border-gray-400"
+              data-preset="p=1000,pm=1000,r=10,y=20,n=12"
+            >
+              $1k + $1k/mo · 10% · 20y
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-gray-500">Initial principal ($)</label>
+              <input
+                id="principal"
+                type="number"
+                min="0"
+                step="100"
+                class="w-full border rounded-lg p-2"
+                value="1000"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500"
+                >Monthly contribution ($)</label
+              >
+              <input
+                id="monthly"
+                type="number"
+                min="0"
+                step="50"
+                class="w-full border rounded-lg p-2"
+                value="100"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500"
+                >Annual nominal rate (%)</label
+              >
+              <input
+                id="rate"
+                type="number"
+                min="0"
+                max="30"
+                step="0.1"
+                class="w-full border rounded-lg p-2"
+                value="7"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Years</label>
+              <input
+                id="years"
+                type="number"
+                min="1"
+                max="60"
+                step="1"
+                class="w-full border rounded-lg p-2"
+                value="30"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Compounding frequency</label>
+              <select id="freq" class="w-full border rounded-lg p-2">
+                <option value="1">Annual (1)</option>
+                <option value="4">Quarterly (4)</option>
+                <option value="12" selected>Monthly (12)</option>
+                <option value="365">Daily (365)</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button
+                id="simulate"
+                class="w-full bg-accent text-white py-2 rounded-lg font-medium hover:opacity-90"
+              >
+                Run simulation
+              </button>
+            </div>
+          </div>
+
+          <p class="text-xs text-gray-500">
+            Effective monthly rate uses nominal APR and compounding: rₘ = (1 +
+            r/n)^(n/12) − 1.
+          </p>
+        </div>
+
+        <!-- Chart + metrics -->
+        <div class="border rounded-xl p-4 space-y-4">
+          <canvas id="chart" class="w-full h-[380px]"></canvas>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="bg-white border rounded-lg p-3">
+              <div class="text-xs text-gray-500">Final Balance</div>
+              <div id="finalBalance" class="text-lg font-semibold">$0.00</div>
+            </div>
+            <div class="bg-white border rounded-lg p-3">
+              <div class="text-xs text-gray-500">Total Contributions</div>
+              <div id="totalContribution" class="text-lg font-semibold">
+                $0.00
+              </div>
+            </div>
+            <div class="bg-white border rounded-lg p-3">
+              <div class="text-xs text-gray-500">Total Interest</div>
+              <div id="totalInterest" class="text-lg font-semibold">$0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="border rounded-xl overflow-auto">
+        <table class="w-full text-sm border border-gray-200 rounded-lg">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="text-left p-2">Year</th>
+              <th class="text-right p-2">Balance</th>
+              <th class="text-right p-2">Contributions</th>
+              <th class="text-right p-2">Interest</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+          <tfoot class="font-semibold border-t">
+            <tr>
+              <td class="text-left p-2">Total</td>
+              <td id="tBal" class="text-right p-2">$0.00</td>
+              <td id="tContribution" class="text-right p-2">$0.00</td>
+              <td id="tInt" class="text-right p-2">$0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <p class="text-xs text-gray-500 text-center">
+        Single-file demo — open locally or host via GitHub Pages.
+      </p>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
